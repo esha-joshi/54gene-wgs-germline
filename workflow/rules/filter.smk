@@ -243,20 +243,10 @@ rule merge_calls:
     sort, zip, etc. all in one data stream.
     """
     input:
-        snps=expand(
-            "results/HaplotypeCaller/filtered/{chrom}_snps.hardfiltered.vcf.gz", chrom=chromList
-        ),
-        s_index=expand(
-            "results/HaplotypeCaller/filtered/{chrom}_snps.hardfiltered.vcf.gz.tbi",
-            chrom=chromList,
-        ),
-        indels=expand(
-            "results/HaplotypeCaller/filtered/{chrom}_indels.hardfiltered.vcf.gz", chrom=chromList
-        ),
-        i_index=expand(
-            "results/HaplotypeCaller/filtered/{chrom}_indels.hardfiltered.vcf.gz.tbi",
-            chrom=chromList,
-        ),
+        snps="results/HaplotypeCaller/filtered/{chrom}_snps.hardfiltered.vcf.gz",
+        s_index="results/HaplotypeCaller/filtered/{chrom}_snps.hardfiltered.vcf.gz.tbi",
+        indels="results/HaplotypeCaller/filtered/{chrom}_indels.hardfiltered.vcf.gz",
+        i_index="results/HaplotypeCaller/filtered/{chrom}_indels.hardfiltered.vcf.gz.tbi",
     output:
         vcf="results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz",
         index="results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz.tbi",
@@ -278,17 +268,13 @@ rule picard_metrics:
     """
     """
     input:
-        calls=expand(
-            "results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz", chrom=chromList
-        ),
-        index=expand(
-            "results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz.tbi", chrom=chromList
-        ),
+        calls="results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz",
+        index="results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz.tbi",
         dbsnp="resources/Homo_sapiens_assembly38.dbsnp138.vcf",
         d="resources/Homo_sapiens_assembly38.dict",
     output:
-        "results/HaplotypeCaller/filtered/{chrom}.variant_calling_detail_metrics",
-        "results/HaplotypeCaller/filtered/{chrom}.variant_calling_summary_metrics",
+        m1="results/HaplotypeCaller/filtered/{chrom}.variant_calling_detail_metrics",
+        m2="results/HaplotypeCaller/filtered/{chrom}.variant_calling_summary_metrics",
     benchmark:
         "results/performance_benchmarks/picard_metrics/{chrom}/benchmarks.tsv"
     params:
