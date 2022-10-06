@@ -2,21 +2,22 @@ from glob import glob
 
 
 rule variant_stats:
+    """
+    Generates bcftools stats on a per-chrom basis.
+    """
     input:
         r="resources/Homo_sapiens_assembly38.fasta",
         f="resources/Homo_sapiens_assembly38.fasta.fai",
         vcfList=expand(
-            "results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz",
-            chrom=config["bcftools"]["variant_stat_regions"],
+            "results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz", chrom=chromList
         ),
         indexList=expand(
-            "results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz.tbi",
-            chrom=config["bcftools"]["variant_stat_regions"],
+            "results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz.tbi", chrom=chromList
         ),
     output:
-        "results/qc/bcftools_stats/{chrom}/joint_called_stats.out",
+        "results/qc/bcftools_stats/all_chrom_stats.out",
     benchmark:
-        "results/performance_benchmarks/variant_stats/{chrom}/variant_stats.tsv"
+        "results/performance_benchmarks/variant_stats/variant_stats.tsv"
     conda:
         "../envs/bcftools_tabix.yaml"
     shell:
@@ -28,35 +29,18 @@ rule variant_stats:
 
 rule plot_variant_stats:
     input:
-        i=expand("results/qc/bcftools_stats/{chrom}/joint_called_stats.out", chrom=chromList),
+        "results/qc/bcftools_stats/all_chrom_stats.out",
     output:
-        "results/qc/bcftools_stats/plots/{chrom}/counts_by_af.indels.dat",
-        "results/qc/bcftools_stats/plots/{chrom}/indels.0.dat",
-        "results/qc/bcftools_stats/plots/{chrom}/substitutions.0.png",
-        "results/qc/bcftools_stats/plots/{chrom}/counts_by_af.snps.dat",
-        "results/qc/bcftools_stats/plots/{chrom}/depth.0.dat",
-        "results/qc/bcftools_stats/plots/{chrom}/indels.0.png",
-        "results/qc/bcftools_stats/plots/{chrom}/tstv_by_af.0.dat",
-        "results/qc/bcftools_stats/plots/{chrom}/depth.0.png",
-        "results/qc/bcftools_stats/plots/{chrom}/indels_by_sample.0.png",
-        "results/qc/bcftools_stats/plots/{chrom}/tstv_by_qual.0.dat",
-        "results/qc/bcftools_stats/plots/{chrom}/plot.py",
-        "results/qc/bcftools_stats/plots/{chrom}/dp_by_sample.0.png",
-        "results/qc/bcftools_stats/plots/{chrom}/plot-vcfstats.log",
-        "results/qc/bcftools_stats/plots/{chrom}/tstv_by_sample.0.dat",
-        "results/qc/bcftools_stats/plots/{chrom}/hets_by_sample.0.png",
-        "results/qc/bcftools_stats/plots/{chrom}/singletons_by_sample.0.png",
-        "results/qc/bcftools_stats/plots/{chrom}/hwe.0.dat",
-        "results/qc/bcftools_stats/plots/{chrom}/tstv_by_sample.0.png",
-        "results/qc/bcftools_stats/plots/{chrom}/snps_by_sample.0.png",
+        "results/qc/bcftools_stats/plots/plot.py",
+        "results/qc/bcftools_stats/plots/plot-vcfstats.log",
     params:
-        d="results/qc/bcftools_stats/plots/{chrom}",
+        d="results/qc/bcftools_stats/plots",
     benchmark:
-        "results/performance_benchmarks/plot_variant_stats/{chrom}/plot_variant_stats.tsv"
+        "results/performance_benchmarks/plot_variant_stats/plot_variant_stats.tsv"
     conda:
         "../envs/bcftools_tabix.yaml"
     shell:
-        "plot-vcfstats -P -p {params.d} {input.i}"
+        "plot-vcfstats -P -p {params.d} {input}"
 
 
 rule create_ped:
@@ -117,9 +101,13 @@ else:
 
 
 rule sex_check:
+    """
+    Bcftools guess-ploidy plugin determines sample sex by checking genotype likelihoods (GL,PL) or genotypes (GT) in the non-PAR region of chrX so we
+    provide only the hardfiltered chrX region VCF here.
+    """
     input:
-        vcf="results/HaplotypeCaller/filtered/HC_variants.hardfiltered.vcf.gz",
-        i="results/HaplotypeCaller/filtered/HC_variants.hardfiltered.vcf.gz.tbi",
+        vcf="results/HaplotypeCaller/filtered/chrX.hardfiltered.vcf.gz",
+        i="results/HaplotypeCaller/filtered/chrX.hardfiltered.vcf.gz.tbi",
     output:
         txt="results/qc/sex_check/ploidy.txt",
         png="results/qc/sex_check/ploidy.png",
@@ -142,12 +130,12 @@ if full:
                 "results/qc/contamination_check/{region}/summary.txt",
                 region=config["verifyBamID"]["region"],
             ),
-            b=expand("results/qc/bcftools_stats/{chrom}/joint_called_stats.out", chrom=chromList),
+            b="results/qc/bcftools_stats/all_chrom_stats.out",
         output:
-            l="results/post_qc_exclusions/{chrom}/exclude_list.tsv",
-            a="results/post_qc_exclusions/{chrom}/exclude_list_with_annotation.tsv",
+            l="results/post_qc_exclusions/exclude_list_{chrom}.tsv",
+            a="results/post_qc_exclusions/exclude_list_{chrom}_with_annotation.tsv",
         params:
-            out="results/post_qc_exclusions/{chrom}/exclude_list",
+            out="results/post_qc_exclusions/exclude_list_{chrom}",
             r=config["max_het_ratio"],
             d=config["min_avg_depth"],
             c=config["max_contam"],
@@ -163,12 +151,12 @@ else:
 
     rule create_exclude_list:
         input:
-            b=expand("results/qc/bcftools_stats/{chrom}/joint_called_stats.out", chrom=chromList),
+            b="results/qc/bcftools_stats/all_chrom_stats.out",
         output:
-            l="results/post_qc_exclusions/{chrom}/exclude_list.tsv",
-            a="results/post_qc_exclusions/{chrom}/exclude_list_with_annotation.tsv",
+            l="results/post_qc_exclusions/exclude_list_{chrom}.tsv",
+            a="results/post_qc_exclusions/exclude_list_with_annotation_{chrom}.tsv",
         params:
-            out="results/post_qc_exclusions/{chrom}/exclude_list",
+            out="results/post_qc_exclusions/exclude_list_{chrom}",
             r=config["max_het_ratio"],
             d=config["min_avg_depth"],
         benchmark:
@@ -181,13 +169,9 @@ else:
 
 rule exclude_samples:
     input:
-        vcfList=expand(
-            "results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz", chrom=chromList
-        ),
-        indexList=expand(
-            "results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz.tbi", chrom=chromList
-        ),
-        l=expand("results/post_qc_exclusions/{chrom}/exclude_list.tsv", chrom=chromList),
+        vcfList="results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz",
+        indexList="results/HaplotypeCaller/filtered/{chrom}.hardfiltered.vcf.gz.tbi",
+        l="results/post_qc_exclusions/exclude_list_{chrom}.tsv",
     output:
         v="results/post_qc_exclusions/samples_excluded.{chrom}.hardfiltered.vcf.gz",
         i="results/post_qc_exclusions/samples_excluded.{chrom}.hardfiltered.vcf.gz.tbi",
@@ -203,6 +187,7 @@ rule exclude_samples:
 
 
 if full:
+
     rule multiqc:
         """Generate one multiQC report for all input fastqs.
         Should add samtools stats output and possibly others eventually,
@@ -218,7 +203,7 @@ if full:
             expand("results/post_trimming_fastqc/{rg}_r1_fastqc.zip", rg=sampleDict.keys()),
             expand("results/post_trimming_fastqc/{rg}_r2_fastqc.zip", rg=sampleDict.keys()),
             "results/qc/relatedness/somalier.pairs.tsv",
-            expand("results/qc/bcftools_stats/{chrom}/joint_called_stats.out", chrom=chromList),
+            "results/qc/bcftools_stats/all_chrom_stats.out",
             expand("results/paired_trimmed_reads/{rg}_fastp.json", rg=sampleDict.keys()),
             expand("results/dedup/{sample}.metrics.txt", sample=SAMPLES),
             expand("results/bqsr/{sample}.recal_table", sample=SAMPLES),
@@ -254,6 +239,7 @@ if full:
         shell:
             "multiqc --force -o {params.outDir} -n {params.outName} --config {input.mqc_config} {params.inDirs} {params.relatedness}"
 
+
 if jointgeno:
 
     rule multiqc:
@@ -268,7 +254,7 @@ if jointgeno:
         """
         input:
             "results/qc/relatedness/somalier.pairs.tsv",
-            expand("results/qc/bcftools_stats/{chrom}/joint_called_stats.out", chrom=chromList),
+            "results/qc/bcftools_stats/all_chrom_stats.out",
             expand(
                 "results/HaplotypeCaller/filtered/{chrom}.variant_calling_detail_metrics",
                 chrom=chromList,

@@ -30,15 +30,13 @@ if full:
             output_subject_list="results/run_summary/final_subject_list.tsv",
             r_resources="workflow/scripts/run_summary_resources.R",
             exclude_list=expand(
-                "results/post_qc_exclusions/{chrom}/exclude_list_with_annotation.tsv",
+                "results/post_qc_exclusions/exclude_list_{chrom}_with_annotation.tsv",
                 chrom=chromList,
             ),
             relatedness="results/qc/relatedness/somalier.pairs.tsv",
             sex="results/qc/relatedness/somalier.samples.tsv",
             fastqc="results/multiqc/multiqc_data/multiqc_fastqc_1.txt",
-            bcftools_stats=expand(
-                "results/qc/bcftools_stats/{chrom}/joint_called_stats.out", chrom=chromList
-            ),
+            bcftools_stats="results/qc/bcftools_stats/all_chrom_stats.out",
         output:
             report="results/run_summary/run_summary.html",
         params:
@@ -65,10 +63,13 @@ if jointgeno:
             start_time="results/tat_tracking/start_time.txt",
             output_subject_list="results/run_summary/final_subject_list.tsv",
             r_resources="workflow/scripts/run_summary_resources.R",
-            exclude_list="results/post_qc_exclusions/exclude_list_with_annotation.tsv",
+            exclude_list=expand(
+                "results/post_qc_exclusions/exclude_list_{chrom}_with_annotation.tsv",
+                chrom=chromList,
+            ),
             relatedness="results/qc/relatedness/somalier.pairs.tsv",
             sex="results/qc/relatedness/somalier.samples.tsv",
-            bcftools_stats="results/qc/bcftools_stats/joint_called_stats.out",
+            bcftools_stats="results/qc/bcftools_stats/all_chrom_stats.out",
         output:
             report="results/run_summary/run_summary.html",
         params:
