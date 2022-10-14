@@ -1,6 +1,8 @@
 ## This test file is designed to be run from workflow/scripts
 ## with the command `testthat::test_file("tests/testthat/test-combine_benchmarks.R", reporter = default_reporter())`
+
 library(hms)
+
 source("../../combine_benchmarks.R")
 
 col.types <- cols(
@@ -51,4 +53,13 @@ test_that("create.dataset combines benchmarking data correctly", {
   test.out <- create.dataset(invec)
 
   expect_identical(test.out, exp.df)
+})
+
+test_that("create.dataset throws error for providing only one file", {
+  # expect error for providing only 1 file
+  expect_error(create.dataset(test.file1))
+})
+
+test_that("create.dataset throws error for non-character vector input", {
+  expect_error(create.dataset(1))
 })
